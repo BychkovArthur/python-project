@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select, func
+from sqlalchemy import delete, select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -24,8 +24,14 @@ class SessionDao(BaseDao):
         return await self.session.scalar(statement)
 
     async def get_all(self) -> list[Session]:
-        """Get all sessions."""
-        statement = select(Session).order_by(Session.id)
+        """Get all sessions, ordered by creation time."""
+        statement = select(Session).order_by(Session.created_ts)
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
+    async def get_all_descending_by_created_ts(self) -> list[Session]:
+        """Get all sessions, ordered by creation time in descending order."""
+        statement = select(Session).order_by(desc(Session.created_ts))
         result = await self.session.execute(statement)
         return result.scalars().all()
 
@@ -61,8 +67,8 @@ class SessionDao(BaseDao):
         return result.scalars().all()
 
     async def get_by_user_id(self, user_id: int) -> list[Session]:
-        """Get sessions by user ID."""
-        statement = select(Session).where(Session.user_id == user_id)
+        """Get sessions by user ID, ordered by creation time."""
+        statement = select(Session).where(Session.user_id == user_id).order_by(Session.created_ts)
         result = await self.session.execute(statement)
         return result.scalars().all()
 
@@ -74,5 +80,11 @@ class SessionDao(BaseDao):
                 f'$.?(@.website_id == {website_id} && @.visited_ts > "{date}")'
             )
         )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
+    async def get_created_after(self, timestamp: str) -> list[Session]:
+        """Get sessions created after a specific timestamp."""
+        statement = select(Session).where(Session.created_ts > timestamp).order_by(Session.created_ts)
         result = await self.session.execute(statement)
         return result.scalars().all()

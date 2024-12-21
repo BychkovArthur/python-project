@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from streamlit_cookies_controller import CookieController
 
-API_URL = "http://localhost:8000/api/v1/user"
+API_URL = "http://localhost:8000/api/v1"
 
 # Инициализируем контроллер куков
 controller = CookieController()
@@ -20,7 +20,7 @@ def register_user():
             "password": password,
             "role": "partner"  # Устанавливаем роль как 'partner'
         }
-        response = requests.post(f"{API_URL}/register", json=user_data)
+        response = requests.post(f"{API_URL}/user/register", json=user_data)
         if response.status_code == 201:
             st.success("Пользователь успешно зарегистрирован!")
         else:
@@ -38,7 +38,7 @@ def get_token():
             "username": username,
             "password": password
         }
-        response = requests.post(f"{API_URL}/token", data=data)
+        response = requests.post(f"{API_URL}/user/token", data=data)
         if response.status_code == 200:
             token = response.json().get("access_token")
             st.success(f"Вы успешно авторизованы")
@@ -52,7 +52,7 @@ def get_token():
 # Функция для проверки авторизации
 def check_authorization(token):
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(f"{API_URL}/login", headers=headers)
+    response = requests.get(f"{API_URL}/user/login", headers=headers)
     if response.status_code == 200:
         return response.json()
     else:
@@ -81,12 +81,35 @@ def profile_page():
     else:
         st.error("Вы не авторизованы. Пожалуйста, войдите в аккаунт.")
 
+# Функция для загрузки CSV файла и создания сессий
+def upload_csv_file():
+    token = controller.get("jwt_token")
+    if token:
+        st.title("Загрузка CSV файла")
+
+        # Загружаем файл через Streamlit
+        csv_file = st.file_uploader("Выберите CSV файл", type=["csv"])
+
+        if csv_file:
+            # Отправляем CSV файл на сервер
+            headers = {"Authorization": f"Bearer {token}"}
+            files = {"file": csv_file.getvalue()}
+
+            response = requests.post(f'{API_URL}/session/upload_csv', headers=headers, files=files)
+
+            if response.status_code == 201:
+                st.success("Сессии успешно созданы!")
+            else:
+                st.error(f"Ошибка при загрузке файла: {response.text}")
+    else:
+        st.error("Вы не авторизованы. Пожалуйста, войдите в аккаунт.")
+
 # Основная навигация в приложении
 def main():
     st.sidebar.title("Навигация")
     selection = st.sidebar.radio(
         "Выберите действие",
-        ["Регистрация", "Вход", "Профиль"]
+        ["Регистрация", "Вход", "Профиль", "Загрузка CSV"]
     )
 
     if selection == "Регистрация":
@@ -95,6 +118,8 @@ def main():
         get_token()
     elif selection == "Профиль":
         profile_page()
+    elif selection == "Загрузка CSV":
+        upload_csv_file()
 
 if __name__ == "__main__":
     main()
