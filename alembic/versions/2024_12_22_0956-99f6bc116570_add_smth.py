@@ -1,8 +1,8 @@
 """add_smth
 
-Revision ID: 4e445294ae63
+Revision ID: 99f6bc116570
 Revises: 
-Create Date: 2024-12-21 17:45:26.444270
+Create Date: 2024-12-22 09:56:01.805461
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '4e445294ae63'
+revision = '99f6bc116570'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -41,6 +41,8 @@ def upgrade() -> None:
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('payload', sa.JSON(), nullable=False),
     sa.Column('prediction', sa.Float(), nullable=False),
+    sa.Column('created_ts', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('session_owner', sa.String(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )

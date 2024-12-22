@@ -2,11 +2,13 @@ from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.daos.session import SessionDao
+from app.schemas.sessions import SessionSchema
 from app.models.user import User as UserModel
 from io import StringIO
 import csv
 import random
 from loguru import logger
+
 
 class SessionService:
     @staticmethod
@@ -40,15 +42,54 @@ class SessionService:
                         "time": time_value
                     })
             
+            # Извлекаем поле session_owner, если оно существует
+            session_owner = row.get("session_owner", None)
+            
             prediction = random.random()
             session_data = {
                 "user_id": current_user.id,
                 "payload": payload,
-                "prediction": prediction
+                "prediction": prediction,
+                "session_owner": session_owner  # Добавляем новое поле
             }
-            created_session = await session_dao.create(session_data)
+            
+            try:
+                created_session = await session_dao.create(session_data)
+            except Exception as e:
+                logger.error(f"Failed to create session: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Error creating session"
+                )
 
         return JSONResponse(
-            content={"message": f"sessions created successfully."},
+            content={"message": "Sessions created successfully."},
             status_code=status.HTTP_201_CREATED
         )
+
+    @staticmethod
+    async def get_sessions_by_user(user_id: int, session: AsyncSession):
+        """
+        Возвращает все сессии для заданного пользователя.
+
+        :param user_id: ID пользователя
+        :param session: сессия базы данных
+        :return: список сессий
+        """
+        session_dao = SessionDao(session)
+        try:
+            sessions = await session_dao.get_by_user_id(user_id)
+
+            # Преобразование объектов SQLAlchemy в JSON-совместимый формат
+            result = [SessionSchema.from_orm(session).model_dump() for session in sessions]
+
+            return JSONResponse(
+                content=result,
+                status_code=status.HTTP_200_OK
+            )
+        except Exception as e:
+            logger.error(f"Ошибка получения сессий для пользователя {user_id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Ошибка получения сессий"
+            )

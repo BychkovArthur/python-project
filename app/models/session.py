@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Float, ForeignKey, DateTime, func
+from sqlalchemy import JSON, Float, ForeignKey, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
@@ -15,6 +15,7 @@ class Session(Base):
     created_ts: Mapped["datetime"] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )  # Timestamp of when the session was created
+    session_owner: Mapped[str] = mapped_column(String, nullable=False)  # Owner of the session
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="sessions")

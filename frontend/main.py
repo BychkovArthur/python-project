@@ -104,12 +104,39 @@ def upload_csv_file():
     else:
         st.error("Вы не авторизованы. Пожалуйста, войдите в аккаунт.")
 
+# Функция для отображения всех сессий текущего пользователя
+def my_sessions():
+    token = controller.get("jwt_token")
+    if token:
+        st.title("Мои сессии")
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(f"{API_URL}/session/my_sessions", headers=headers)
+
+        if response.status_code == 200:
+            sessions = response.json()
+            if not sessions:
+                st.info("У вас пока нет сессий.")
+            else:
+                for session in sessions:
+                    prediction = session.get("prediction", 0.0)
+                    session_owner = session.get("session_owner", "Не указан")  # Добавляем отображение владельца
+                    smilie = "😄" if prediction < 0.3 else "😐" if prediction < 0.7 else "😠"
+                    st.write(f"Session ID: {session['id']}")
+                    st.write(f"Prediction: {prediction:.2f} {smilie}")
+                    st.write(f"Payload: {session['payload']}")
+                    st.write(f"Owner: {session_owner}")  # Отображаем владельца
+                    st.write("---")
+        else:
+            st.error(f"Ошибка загрузки сессий: {response.text}")
+    else:
+        st.error("Вы не авторизованы. Пожалуйста, войдите в аккаунт.")
+
 # Основная навигация в приложении
 def main():
     st.sidebar.title("Навигация")
     selection = st.sidebar.radio(
         "Выберите действие",
-        ["Регистрация", "Вход", "Профиль", "Загрузка CSV"]
+        ["Регистрация", "Вход", "Профиль", "Загрузка CSV", "Мои сессии"]
     )
 
     if selection == "Регистрация":
@@ -120,6 +147,8 @@ def main():
         profile_page()
     elif selection == "Загрузка CSV":
         upload_csv_file()
+    elif selection == "Мои сессии":
+        my_sessions()
 
 if __name__ == "__main__":
     main()
