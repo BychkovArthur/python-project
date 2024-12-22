@@ -26,17 +26,17 @@ top_alice_sites = ['i1.ytimg.com', 's.youtube.com', 'www.youtube.com', 'www.face
 top_fraud_sites = ['www.google.fr', 'unknown', 'www.google.com', 'annotathon.org', 'apis.google.com', 'www.facebook.com',
                    'www.bing.com', 'blast.ncbi.nlm.nih.gov', 'www.ncbi.nlm.nih.gov', 'clients1.google.com']
 
-with open('app/static/site_dic.pkl', 'rb') as file:
+with open('../app/static/site_dic.pkl', 'rb') as file:
     site_dic = pickle.load(file)
 id_to_site = {v:k for (k,v) in site_dic.items()}
 id_to_site[0] = 'unknown'
 
 #В тест сешнс лежит csv файл 
-test_sessions = pd.read_csv("test_sessions.csv")
-test_sessions = test_sessions.iloc[:5, :]
+# test_sessions = pd.read_csv("test_sessions.csv")
+# test_sessions = test_sessions.iloc[:5, :]
 
 #Загрузка модели из файла
-with open('app/static/log_reg_model.pkl', 'rb') as file:
+with open('../app/static/log_reg_model.pkl', 'rb') as file:
     loaded_model = pickle.load(file)
     
 #обрабатываем цсв и возвращаем предикты
@@ -68,5 +68,7 @@ def preproc_pred(test_sessions):
     test_sessions['time_diff'] = time_diff_column
         
     y_pred = loaded_model.predict_proba(test_sessions)
+
+    print("ML RES = ", y_pred)
 
     return y_pred

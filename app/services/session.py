@@ -1,3 +1,4 @@
+import pandas as pd
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,9 +7,9 @@ from app.schemas.sessions import SessionSchema
 from app.models.user import User as UserModel
 from io import StringIO
 import csv
-import random
 from loguru import logger
 
+from app.services.ml import preproc_pred
 
 class SessionService:
     @staticmethod
@@ -22,39 +23,61 @@ class SessionService:
         :return: список созданных сессий
         """
 
+        # Загружаем CSV как DataFrame
         f = StringIO(file)
-        reader = csv.DictReader(f, delimiter=',')
+        df = pd.read_csv(f)
+
+        # Сохраняем исходный CSV, чтобы позже добавить к нему предсказания
+        original_df = df.copy()
+
+        # Убираем столбец session_owner, если он существует
+        if 'session_owner' in df.columns:
+            df = df.drop(columns=['session_owner'])
+
+        # Применяем функцию preproc_pred для получения вероятностей для всех сессий
+        # Здесь передаем весь обрезанный CSV (df), а не отдельные строки
+        predictions = [prediction[1] for prediction in preproc_pred(df)]  # Вероятности для всех строк
+
+        # Добавляем предсказания (вероятность класса 0) в исходный DataFrame
+        original_df['prediction'] = predictions  # Сохраняем только для класса 0
+
+        # Преобразуем обновленный DataFrame в строку CSV
+        output = StringIO()
+        original_df.to_csv(output, index=False)
+        modified_csv = output.getvalue()
+
+        # Перебираем строки исходного DataFrame и сохраняем данные с предсказанием в БД
         session_dao = SessionDao(session)
 
-        for row in reader:
+        for idx, row in original_df.iterrows():
             payload = []
 
             for i in range(1, 11):  # Для каждого siteX и timeX
                 site_key = f"site{i}"
                 time_key = f"time{i}"
-                
+
                 site_value = row.get(site_key)
                 time_value = row.get(time_key)
-                
+
                 if site_value and time_value:
                     payload.append({
                         "site": site_value,
                         "time": time_value
                     })
-            
-            # Извлекаем поле session_owner, если оно существует
-            session_owner = row.get("session_owner", None)
-            
-            prediction = random.random()
+
+            # Получаем предсказание для текущей строки
+            prediction = row['prediction']
+
             session_data = {
                 "user_id": current_user.id,
                 "payload": payload,
-                "prediction": prediction,
-                "session_owner": session_owner  # Добавляем новое поле
+                "prediction": prediction,  # Используем предсказание для класса 0,
+                "session_owner": row["session_owner"],
             }
-            
+
             try:
-                created_session = await session_dao.create(session_data)
+                # Сохраняем сессию в БД
+                await session_dao.create(session_data)
             except Exception as e:
                 logger.error(f"Failed to create session: {e}")
                 raise HTTPException(
@@ -63,7 +86,7 @@ class SessionService:
                 )
 
         return JSONResponse(
-            content={"message": "Sessions created successfully."},
+            content={"message": "Sessions created successfully.", "csv": modified_csv},
             status_code=status.HTTP_201_CREATED
         )
 
