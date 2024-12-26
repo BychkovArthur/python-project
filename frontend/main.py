@@ -99,7 +99,7 @@ def profile_page():
                     st.markdown(
                         """
                         <span style="color: gold; font-weight: bold; font-size: 18px;">
-                            Текущая роль: premium
+                            Статус: premium
                         </span>
                         """,
                         unsafe_allow_html=True,
@@ -117,7 +117,23 @@ def upload_csv_file():
     if token:
         st.title("Загрузка CSV файла")
 
-        # Загружаем файл через Streamlit
+        # Проверяем роль пользователя
+        headers = {"Authorization": f"Bearer {token}"}
+        credentials = UtilsService.decode_jwt(token)
+        user_id = credentials.get("user_id")
+
+        response = requests.get(f"{API_URL}/user/{user_id}/role", headers=headers)
+
+        if response.status_code == 200:
+            user_data = response.json()
+            if user_data["role"] != "premium":
+                st.error("Доступ запрещён. Только пользователи с ролью 'premium' могут загружать CSV файлы.")
+                return
+        else:
+            st.error("Ошибка проверки роли пользователя.")
+            return
+
+        # Если роль соответствует, позволяем загрузку CSV
         csv_file = st.file_uploader("Выберите CSV файл", type=["csv"])
 
         if csv_file:
