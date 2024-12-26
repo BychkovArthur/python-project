@@ -1,0 +1,5 @@
+streamlit
+requests
+streamlit-cookies-controller
+stripe
+python-jose

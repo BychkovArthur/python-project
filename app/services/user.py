@@ -59,10 +59,24 @@ class UserService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Incorrect email or password",
             )
-
+        print(_user)
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = UtilsService.create_access_token(data={"sub": _user.email}, expires_delta=access_token_expires)
+        access_token = UtilsService.create_access_token(data={"sub": _user.email, "user_id": _user.id}, expires_delta=access_token_expires)
         return Token(access_token=access_token, token_type="Bearer")
+    
+    @staticmethod
+    async def get_user_role(user_id: int, session: AsyncSession) -> dict:
+        """
+        Получение роли пользователя.
+        """
+        dao = UserDao(session)
+        user = await dao.get_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        return {"email": user.email, "role": user.role}
 
     @staticmethod
     async def get_current_user(
@@ -142,6 +156,17 @@ class UserService:
             content={"message": "User deleted successfully!"},
             status_code=status.HTTP_200_OK,
         )
+    
+    @staticmethod
+    async def update_user_role(user_id: int, new_role: str, session: AsyncSession):
+        dao = UserDao(session)
+        updated_user = await dao.update_role(user_id, new_role)
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        return {"message": f"User role updated to {new_role}", "user": updated_user.email, "new_role": updated_user.role}
 
 
 CurrentUserDep = Annotated[UserModel, Depends(UserService.get_current_user)]
