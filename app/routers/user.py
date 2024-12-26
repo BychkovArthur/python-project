@@ -24,13 +24,6 @@ async def token(
 ) -> Token:
     return await UserService.login(form_data, session)
 
-from fastapi import APIRouter, Depends, status
-from app.db import SessionDep
-from app.services.user import UserService
-
-router = APIRouter(tags=["User"], prefix="/user")
-
-
 @router.get("/{user_id}/role", status_code=status.HTTP_200_OK)
 async def get_user_role(
     user_id: int,
