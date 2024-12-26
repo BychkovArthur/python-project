@@ -9,8 +9,11 @@ RUN apt-get update && apt-get install -y \
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем файлы проекта
+# Копируем содержимое папки frontend в контейнер
 COPY . /app
+
+# Копируем папку static, которая находится уровнем выше
+COPY static /app/static
 
 # Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
