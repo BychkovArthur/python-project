@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.models.base import Base, intpk
+from app.models.subscription import Subscription
 
 
 class User(Base):
@@ -19,3 +20,4 @@ class User(Base):
 
     # Relationships
     sessions: Mapped[list["Session"]] = relationship("Session", back_populates="user")
+    subscriptions: Mapped[list["Subscription"]] = relationship("Subscription", back_populates="user")

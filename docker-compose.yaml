@@ -20,11 +20,11 @@ services:
     volumes:
       - postgres_data1:/var/lib/postgresql/data/
     ports:
-      - "5432:5432"
+      - "5432:5432" 
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     env_file:
       - .env
     networks:
@@ -34,8 +34,8 @@ services:
     container_name: "fast_pgadmin"
     image: dpage/pgadmin4
     environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - "5050:80"
     depends_on:
@@ -46,9 +46,31 @@ services:
     networks:
       - "fast_network"
 
+  streamlit:
+    container_name: "streamlit"
+    build:
+      context: ./frontend  # Путь к папке с Dockerfile Streamlit
+    ports:
+      - "8501:8501"
+    depends_on:
+      - app
+    restart: always
+    networks:
+      - "fast_network"
+
+  stripe:
+    container_name: stripe
+    image: stripe/stripe-cli
+    command: listen --forward-to http://app:8000/api/v1/webhook/
+    environment:
+      - STRIPE_API_KEY=sk_test_51QYvHtFsQfGGW0ICxy4d4fUd7wy8gYzrdf2KMBGQrIaltvoB81bys1rkgL3ZpYs5g3SUqipUg4zmYe6Q7JA6DkIM00hGhIn3ED
+    depends_on:
+      - app
+    networks:
+      - fast_network
+
 volumes:
   postgres_data1:
-
 
 networks:
   fast_network:

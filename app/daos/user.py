@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.daos.base import BaseDao
@@ -46,3 +46,16 @@ class UserDao(BaseDao):
             await self.session.execute(statement)
             await self.session.commit()
         return user
+
+    async def update_role(self, user_id: int, new_role: str) -> User | None:
+        """Update the role of a user by their ID."""
+        statement = (
+            update(User)
+            .where(User.id == user_id)
+            .values(role=new_role)
+            .returning(User)
+        )
+        result = await self.session.execute(statement)
+        await self.session.commit()
+        updated_user = result.scalar_one_or_none()
+        return updated_user

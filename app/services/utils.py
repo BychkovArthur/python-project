@@ -11,7 +11,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/user/token")
 
-
 class UtilsService:
     @staticmethod
     def verify_password(plain_password, hashed_password) -> bool:
@@ -24,6 +23,7 @@ class UtilsService:
     @staticmethod
     def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
         to_encode = data.copy()
+        print(to_encode)
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
         else:
@@ -31,3 +31,4 @@ class UtilsService:
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return encoded_jwt
+    
