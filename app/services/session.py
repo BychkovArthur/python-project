@@ -105,7 +105,7 @@ class SessionService:
 
             # Преобразование объектов SQLAlchemy в JSON-совместимый формат
             result = [SessionSchema.from_orm(session).model_dump() for session in sessions]
-
+            print(result)
             return JSONResponse(
                 content=result,
                 status_code=status.HTTP_200_OK

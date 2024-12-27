@@ -10,7 +10,7 @@ class SubscriptionService:
     @staticmethod
     async def create_subscription(subscription_data: SubscriptionIn, session: AsyncSession) -> SubscriptionOut:
         dao = SubscriptionDao(session)
-        new_subscription = await dao.create(subscription_data.dict())
+        new_subscription = await dao.create(subscription_data.model_dump())
         return SubscriptionOut.model_validate(new_subscription)
 
     @staticmethod

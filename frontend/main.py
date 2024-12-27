@@ -4,6 +4,8 @@ from streamlit_cookies_controller import CookieController
 import stripe
 from jwt_parse import UtilsService
 from datetime import datetime
+from graphics import *
+import os
 
 API_URL = "http://app:8000/api/v1"
 
@@ -177,6 +179,45 @@ def my_sessions():
     else:
         st.error("Вы не авторизованы. Пожалуйста, войдите в аккаунт.")
 
+def session_graphics():
+    token = controller.get("jwt_token")
+    if token:
+        st.title("Информация о сессиях")
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            credantions = UtilsService.decode_jwt(token)
+
+            exp = credantions.get("exp")
+            if exp and datetime.utcfromtimestamp(exp) < datetime.utcnow():
+                raise ValueError("Срок действия токена истёк.")
+            user_id = int(credantions.get("user_id"))
+            
+            response = requests.get(
+                f"{API_URL}/session/my_sessions",
+                headers=headers,
+            )
+
+            # sessions_json = response.json()
+            # sessions_payload = sessions_json["payload"]
+            # json_output = transform_to_json(df)
+
+            # with open(PATH_TO_FORMATTED_JSON, 'w') as file:
+            #     file.write(json_output)
+
+            result_df, most_popular_sites, df_filtered, top_popular_sites, result_df = preprocessing(PATH_TO_FORMATTED_JSON, "static/site_dic.pkl", top_fraud_sites)
+
+            clics_per_site(df_filtered)
+            distribution_clics(top_popular_sites)
+            fraud_distributions(top_popular_sites, result_df)
+            
+        except Exception as e:
+                st.error(f"Ошибка: {str(e)}")
+    else:
+        st.error("Вы не авторизованы. Пожалуйста, войдите в аккаунт.")
+
+
+
+
 def payment_page():
     token = controller.get("jwt_token")
     if token:
@@ -222,7 +263,7 @@ def payment_page():
                             """,
                             unsafe_allow_html=True,
                         )
-                        st.stop()  # Прерываем выполнение Streamlit
+                        st.stop()
                     else:
                         st.error("Не удалось получить URL для оплаты.")
             except Exception as e:
@@ -298,14 +339,13 @@ def is_authenticated():
     except Exception:
         return False
     
-def logout_if_expired():
-    if not is_authenticated():
-        token = controller.get("jwt_token")  # Проверяем, существует ли кука
-        if token:
-            controller.remove("jwt_token")
-        st.session_state.pop("token", None)
+# def logout_if_expired():
+#     if not is_authenticated():
+#         token = controller.get("jwt_token")  # Проверяем, существует ли кука
+#         if token:
+#             controller.remove("jwt_token")
+#         st.session_state.pop("token", None)
 
-import streamlit.components.v1 as components
 
 def render_logout_button():
     # Проверяем авторизацию
@@ -337,7 +377,6 @@ def render_logout_button():
             logout()
 
 def main():
-    logout_if_expired()
     render_logout_button()
     st.sidebar.title("Навигация")
     
@@ -348,22 +387,13 @@ def main():
     if authenticated:
         selection = st.sidebar.radio(
             "Выберите действие",
-            ["Профиль", "Загрузка CSV", "Мои сессии", "Оплата подписки", "История оплат"]
+            ["Профиль", "Загрузка CSV", "Мои сессии", "Информация о сессиях", "Оплата подписки", "История оплат"]
         )
     else:
         selection = st.sidebar.radio(
             "Выберите действие",
             ["Регистрация", "Вход"]
         )
-
-    # Обработка успешной оплаты
-    query_params = st.query_params
-    if "success" in query_params:
-        success_page()
-        return
-    elif "cancel" in query_params:
-        st.error("Оплата была отменена.")
-        return
 
     # Обработка действий из меню
     if selection == "Регистрация":
@@ -376,6 +406,8 @@ def main():
         upload_csv_file()
     elif selection == "Мои сессии":
         my_sessions()
+    elif selection == "Информация о сессиях":
+        session_graphics()
     elif selection == "Оплата подписки":
         payment_page()
     elif selection == "История оплат":

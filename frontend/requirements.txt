@@ -3,3 +3,5 @@ requests
 streamlit-cookies-controller
 stripe
 python-jose
+matplotlib
+seaborn
