@@ -28,6 +28,7 @@ mypy = "^1.4.1"
 black = "^23.7.0"
 pytest = "^7.4.0"
 pre-commit = "^3.3.3"
+pytest-asyncio = "^0.21.0"  # Добавлено
 
 [tool.black]
 line-length = 120
@@ -59,6 +60,7 @@ exclude = [
     ".tox",
     ".venv",
     "migrations",
+    "__pycache__",
     "__pypackages__",
     "buck-out",
     "build",
